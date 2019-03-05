@@ -1,7 +1,7 @@
 /*
  * Host Dispatcher Shell Project for SOFE 3950U / CSCI 3020U: Operating Systems
  *
- * Copyright (C) 2015, <GROUP MEMBERS>
+ * Copyright (C) 2019, Group 1
  * All rights reserved.
  *
  */
@@ -17,19 +17,14 @@
 #include "utility.h"
 #include "hostd.h"
 
-// Put macros or constants here using #define
 #define MEMORY 1024
-
-// Put global environment variables here
 
 int dispatcherTime = 0;
 int dispatcherNodes = 0;
 
 // Define functions declared in hostd.h here
 
-int main(int argc, char *argv[])
-{
-    // ==================== YOUR CODE HERE ==================== //
+int main(int argc, char *argv[]) {
     proc tempProcess;
   	resources res_avail;
   	res_avail.printers = 2;
@@ -50,26 +45,23 @@ int main(int argc, char *argv[])
     priority2 = malloc(sizeof(node_q));
     priority3 = malloc(sizeof(node_q));
 
-	  // Initalise memory to 0
+	  //memorry starts at 0
 	  for(int i = 0; i < MEMORY; i++){
 		    res_avail.available_memory[i] = 0;
-
     }
-    // Load the dispatchlist
+
+    // loads the 'dispatchlist'
     FILE *fp = fopen("dispatchlist", "r");
 	  if(fp == NULL)
     {
 		      fprintf(stderr, "FILE OPEN ERROR \n");
 		      exit(1);
 	  }
-	  else
-	  {
-
-	  }
 
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
+
     // Add each process structure instance to the job dispatch list queue
     while ((read = getline(&line, &len, fp)) != -1)
 	  {
@@ -107,113 +99,73 @@ int main(int argc, char *argv[])
 
     fclose(fp);
 
-    while(1)
-	  {
+    while(1) {
       dispatcherTime += 1;
-    // Iterate through each item in the job dispatch list, add each process
-    // to the appropriate queues
-
-    if (jobDispatcher->next != NULL)
-		{
-
+    /*add all jobs to queue*/
+    if (jobDispatcher->next != NULL) {
 			int count;
 			count = dispatcherNodes;
-
-			while (count > 0)
-			{
-
+			while (count > 0) {
 				proc * pProcess = pop(jobDispatcher);
-				if (pProcess == NULL){
+				if (pProcess == NULL) {
 					break;
 				}
 				tempProcess = *pProcess;
-				if (tempProcess.arrivalTime <= dispatcherTime)
-				{
-
-					if (tempProcess.priority == 0)
-					{
+				if (tempProcess.arrivalTime <= dispatcherTime) {
+					if (tempProcess.priority == 0) {
 						push(tempProcess, realTime);
 						dispatcherNodes--;
-					}
-					else
-					{
+					}	else {
 						push(tempProcess, userJobQueue);
 						dispatcherNodes--;
 					}
-				}
-				else
-				{
+				}	else {
 					push(tempProcess, jobDispatcher);
 				}
 				count-= 1;
-
 			}
-
-
 }
-    // Allocate the resources for each process before it's executed
 
-    if (realTime->next == NULL)
-		{
 
-			if (userJobQueue->next != NULL)
-			{
-
+    /*allocate more memory per process as needed*/
+    if (realTime->next == NULL)	{
+			if (userJobQueue->next != NULL)	{
 				tempProcess = *pop(userJobQueue);
 				if (allocateMemory(res_avail.available_memory, tempProcess, MEMORY)){
-
-					if(allocateResources(tempProcess, res_avail))
-					{
-
-						if(tempProcess.priority == 1)
-						{
-
+					if(allocateResources(tempProcess, res_avail)) {
+						if(tempProcess.priority == 1)	{
 							push(tempProcess, priority1);
 						}
-						if(tempProcess.priority == 2)
-						{
-
+            if(tempProcess.priority == 2) {
 							push(tempProcess, priority2);
 						}
-						if(tempProcess.priority == 3)
-						{
-
+						if(tempProcess.priority == 3) {
 							push(tempProcess, priority3);
 						}
-					}
-					else
-					{
-
+					}	else {
 						push(tempProcess, userJobQueue);
 					}
-				}
-				else
-				{
-
+				}	else {
 					push(tempProcess, userJobQueue);
 				}
 			}
 }
 
-    // Execute the process binary using fork and exec
-    // Perform the appropriate signal handling / resource allocation and de-alloaction
-
-    else
-		{
-
+    /*Execute the process using fork + exec while keeping track of memory allocation/de-alloaction*/
+    else {
 			tempProcess = *pop(realTime);
 			int pid = fork();
 			int status;
-			if (pid == 0) //child
-			{
+
+      /*child process*/
+			if (pid == 0)	{
 				tempProcess.pid = getpid();
 				tempProcess.duration--;
 				displayProcess(&tempProcess);
 				execv("./process", argv);
 				exit(0);
-			}
-			else // parent
-			{
+      /* parent process*/
+			}	else {
 				sleep(tempProcess.duration);
 				kill(pid, SIGTSTP);
 				kill(pid, SIGINT);
@@ -221,30 +173,20 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (priority1->next == NULL)
-		{
-			if (priority2->next == NULL)
-			{
-				if (priority3->next == NULL)
-				{
+		if (priority1->next == NULL) {
+			if (priority2->next == NULL) {
+				if (priority3->next == NULL) {
 					if (jobDispatcher->next == NULL)
 						exit(0);
-				}
-				else
-				{
-
+				}	else {
 					tempProcess = *pop(priority3);
 					tempProcess = handleProcess(tempProcess, argv);
 					if (tempProcess.duration > 0){
 						tempProcess.priority = 3;
 						push(tempProcess, priority3);
 					}
-
-
 				}
-			}
-			else
-			{
+			} else {
 				tempProcess = *pop(priority2);
 				tempProcess = handleProcess(tempProcess, argv);
 				if (tempProcess.duration > 0){
@@ -253,9 +195,7 @@ int main(int argc, char *argv[])
 				}
 			}
 
-		}
-		else
-		{
+		}	else {
 			tempProcess = *pop(priority1);
 			tempProcess = handleProcess(tempProcess, argv);
 			if (tempProcess.duration > 0){
@@ -263,8 +203,6 @@ int main(int argc, char *argv[])
 				push(tempProcess, priority2);
 			}
     }
-
-    // Repeat until all processes have been executed, all queues are empty
-}
+  }
     return EXIT_SUCCESS;
 }

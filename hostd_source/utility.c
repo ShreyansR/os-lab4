@@ -1,7 +1,7 @@
 /*
  * Host Dispatcher Shell Project for SOFE 3950U / CSCI 3020U: Operating Systems
  *
- * Copyright (C) 2015, <GROUP MEMBERS>
+ * Copyright (C) 2019, Group 1
  * All rights reserved.
  *
  */
@@ -10,8 +10,6 @@
 #include <unistd.h>
 #include <signal.h>
 #include "utility.h"
-
-// Define your utility functions here, you will likely need to add more...
 
 void displayProcess(proc * process)
 {
@@ -22,7 +20,8 @@ void displayProcess(proc * process)
   }
 }
 
-int allocateMemory(int *memory, proc tempProcess, int size){
+/*this function allocates the right amount of memory needed for the targeted process*/
+int allocateMemory(int *memory, proc tempProcess, int size) {
 	int allocated = 0;
 	int start = 64;
 
@@ -46,14 +45,14 @@ int allocateMemory(int *memory, proc tempProcess, int size){
 	return 0;
 }
 
-
-void deallocateMemory(int *memory, proc tempProcess){
+/*for the temp process, make memory 0 (dealocate the memory)*/
+void deallocateMemory(int *memory, proc tempProcess) {
 	for(int i = 0; i < tempProcess.memory;i++){
 		memory[i + tempProcess.address] = 0;
 	}
 }
 
-int allocateResources(proc tempProcess, resources rec){
+int allocateResources(proc tempProcess, resources rec) {
 	if((tempProcess.printers <= rec.printers)
     & (tempProcess.scanners <= rec.scanners)
     & (tempProcess.modem <= rec.modem)
@@ -70,60 +69,45 @@ int allocateResources(proc tempProcess, resources rec){
     }
 }
 
-void deallocateResources(proc tempProcess, resources rec)
-{
+void deallocateResources(proc tempProcess, resources rec) {
     rec.printers += tempProcess.printers;
     rec.scanners += tempProcess.scanners;
     rec.modem += tempProcess.modem;
     rec.drives += tempProcess.drives;
 }
 
-proc handleProcess(proc tempProcess, char* arg[])
-{
-    if (tempProcess.pid != 0)
-    {
+proc handleProcess(proc tempProcess, char* arg[]) {
+    if (tempProcess.pid != 0) {
 
         tempProcess.duration = tempProcess.duration - 1;
         kill(tempProcess.pid, SIGCONT);
         sleep(1);
-        if (tempProcess.duration > 0 )
-        {
+        if (tempProcess.duration > 0 ) {
             kill(tempProcess.pid, SIGTSTP);
-        }
-        else
-        {
+        } else {
             kill(tempProcess.pid, SIGINT);
         }
+    } else {
+      int pid;
+      pid = fork();
 
-    }
-    else
-    {
-        int pid;
-		pid = fork();
-        if (pid == 0) //child
-        {
-            tempProcess.pid = getpid();
-			displayProcess(&tempProcess);
-            execv("./process", arg);
-            exit(0);
-        }
-        else // parent
-        {
-			tempProcess.pid = pid;
-			tempProcess.duration = tempProcess.duration - 1;
-            sleep(1);
-            if (tempProcess.duration > 0 )
-            {
-                kill(pid, SIGTSTP);
-
-            }
-            else
-            {
-                kill(pid, SIGINT);
-
+      /*child process*/
+      if (pid == 0) {
+        tempProcess.pid = getpid();
+        displayProcess(&tempProcess);
+        execv("./process", arg);
+        exit(0);
+        /*parent process*/
+        } else {
+          tempProcess.pid = pid;
+          tempProcess.duration = tempProcess.duration - 1;
+          sleep(1);
+          if (tempProcess.duration > 0 ) {
+            kill(pid, SIGTSTP);
+            } else {
+              kill(pid, SIGINT);
             }
         }
     }
 	return tempProcess;
-
 }
